@@ -1,0 +1,209 @@
+{extends file="admin-layout.tpl"}
+
+{block name="no-return-functions"}
+    {$admin_current_location = 'tools'}
+
+    {loop name="currency" type="currency" default_only=1}
+        {$currency=$SYMBOL}
+    {/loop}
+{/block}
+
+{block name="page-title"}{intl l='CA Mensuel'}{/block}
+
+{block name="check-resource"}admin.order{/block}
+{block name="check-access"}view{/block}
+
+{block name="main-content"}
+{$graphData = ''}
+
+<div id="wrapper" class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="general-block-decorator">
+                <div class="jqplot-content" style="margin-bottom: 20px">
+                    <div id="jqplot"></div>
+                </div>
+
+                <table class="table table-bordered table-condensed table-hover">
+                    <thead>
+                    <tr>
+                        <th>{intl l="Mois"}</th>
+                        <th class="text-right text-nowrap">{intl l="Total HT"}</th>
+                        <th class="text-right text-nowrap">{intl l="Total TVA"}</th>
+                        <th class="text-right text-nowrap">{intl l="Total TTC"}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {$total_ht = 0}
+                    {$total_ttc = 0}
+                    {$total_tva = 0}
+                    {$virg = ''}
+
+                    {foreach $data as $annee => $monthData}
+                        <tr class="info">
+                            <th colspan="99">
+                                Année {$annee}
+                            </th>
+                        </tr>
+
+                        <tr>
+                            <th class="text-center">Mois</th>
+                            <th class="text-right">CA HT</th>
+                            <th class="text-right">TVA</th>
+                            <th class="text-right">CA TTC</th>
+                        </tr>
+
+                        {$total_ht_an = 0}
+                        {$total_ttc_an = 0}
+                        {$total_tva_an = 0}
+
+                        {foreach $monthData as $mois => $value}
+                            {$strMois = $mois|string_format:"%02d"}
+
+                            <tr>
+                                <td class="text-center">{$strMois}/{$annee|string_format:"%04d"}</td>
+                                <td class="text-right">{format_money number=$value.total_ht symbol=$currency}</td>
+                                <td class="text-right">{format_money number=$value.total_tva symbol=$currency}</td>
+                                <td class="text-right">{format_money number=$value.total_ttc symbol=$currency}</td>
+                            </tr>
+
+                            {$total_ht_an  = $total_ht_an  + $value.total_ht}
+                            {$total_ttc_an = $total_ttc_an + $value.total_ttc}
+                            {$total_tva_an = $total_tva_an + $value.total_tva}
+
+                            {$total_ht  = $total_ht  + $value.total_ht}
+                            {$total_ttc = $total_ttc + $value.total_ttc}
+                            {$total_tva = $total_tva + $value.total_tva}
+
+                            {$graphData = "[ '$annee-$strMois-01', {$value.total_ht|round:2} ]$virg$graphData"}
+                            {$virg = ','}
+                        {/foreach}
+
+                        <tr>
+                            <th class="text-center">TOTAL {$annee}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_ht_an}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_tva_an}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_ttc_an}</th>
+                        </tr>
+                    {/foreach}
+
+                    {if empty($data)}
+                        <tr>
+                            <td colspan="99">
+                                <div class="alert alert-info">Aucune commande pour cette période</div>
+                            </td>
+                        </tr>
+                    {/if}
+                    </tbody>
+
+                    <tr class="success">
+                        <th class="text-center">{intl l="TOTAL GENERAL"}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{/block}
+
+{block name="javascript-initialization"}
+    <script src="{javascript file='assets/js/jqplot/jquery.jqplot.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.highlighter.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.pointLabels.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.dateAxisRenderer.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.canvasTextRenderer.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.canvasAxisTickRenderer.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.canvasAxisTickRenderer.min.js'}"></script>
+    <script src="{javascript file='assets/js/jqplot/plugins/jqplot.canvasOverlay.min.js'}"></script>
+
+    <script>
+        var graphData = [ {$graphData nofilter} ];
+
+        $.jqplot.config.enablePlugins = true;
+
+        var jQPlotsOptions = {
+            animate: false,
+            axesDefaults: {
+                tickOptions: {
+                    showMark: true,
+                    showGridline: true,
+                }
+            },
+            seriesDefaults: {
+                pointLabels: { show:false },
+                lineWidth: 2,
+                shadow: false,
+                markerOptions: {
+                    shadow: false,
+                    style: 'filledCircle',
+                    size: 6
+                }
+            },
+            seriesColors: ['orange'],
+            axes: {
+                xaxis: {
+                    renderer:$.jqplot.DateAxisRenderer,
+                    rendererOptions:{
+                        tickRenderer:$.jqplot.CanvasAxisTickRenderer
+                    },
+                    borderColor: '#ccc',
+                    ticks: [],
+                    tickInterval:'6 month',
+                    tickOptions: {
+                        showGridline: true,
+                        formatString: '%m/%Y',
+                        angle:-40
+                    }
+                },
+                yaxis: {
+                    min: 0,
+                    tickOptions: {
+                        showGridline: true,
+                        showMark: false,
+                        showLabel: true,
+                        shadow: false
+                    }
+                }
+            },
+            grid: {
+                background: '#FFF',
+                shadow: false,
+                borderColor: '#FFF'
+            },
+            highlighter: {
+                show: true,
+                sizeAdjust: 7,
+                tooltipLocation: 'n',
+                tooltipContentEditor: function (str, seriesIndex, pointIndex, plot) {
+                    var date = new Date(plot.data[seriesIndex][pointIndex][0]);
+
+                    return $.jqplot.sprintf(
+                        "%d/%d - %.2f&nbsp;{currency attr="symbol"}",
+                        1 + date.getMonth(),
+                        date.getFullYear(),
+                        plot.data[seriesIndex][pointIndex][1]
+                    );
+                }
+            }
+        };
+
+        $(function() {
+            jQPlotInstance = $.jqplot(
+                "jqplot",
+                [ graphData ],
+                jQPlotsOptions
+            );
+
+            $(window).bind('resize', function (event, ui) {
+                jQPlotInstance.replot({
+                    resetAxes: true
+                });
+            });
+        });
+    </script>
+    {$total_ht|print_r}
+{/block}

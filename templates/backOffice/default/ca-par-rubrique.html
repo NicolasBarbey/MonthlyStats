@@ -1,0 +1,175 @@
+lo{extends file="admin-layout.tpl"}
+
+{block name="no-return-functions"}
+    {$admin_current_location = 'tools'}
+
+    {loop name="currency" type="currency" default_only=1}
+        {$currency=$SYMBOL}
+    {/loop}
+{/block}
+
+{block name="page-title"}{intl l='CA par catégorie'}{/block}
+
+{block name="check-resource"}admin.order{/block}
+{block name="check-access"}view{/block}
+
+{block name="main-content"}
+
+{$mois = [ "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Décembre" ]}
+
+{$annee = $smarty.now|date_format:"%Y"}
+
+<div id="wrapper" class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="general-block-decorator">
+                <form class="form-inline" action="{url path="/admin/ca-par-rubrique"}" method="POST">
+                    <div class="form-group">
+                        <label>Visualiser de : </label>
+                        <select name="mois_debut" class="form-control">
+                            {for $idx = 0; $idx < 12; $idx++}
+                                <option value="{$idx+1}"{if $mois_debut == $idx+1} selected{/if}>{$mois[$idx]}</option>
+                            {/for}
+                        </select>
+                        <select name="annee_debut" class="form-control">
+                            {for $idx = 2009; $idx <= $annee; $idx++}
+                                <option value="{$idx}"{if $annee_debut == $idx} selected{/if}>{$idx}</option>
+                            {/for}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>à : </label>
+                        <select name="mois_fin" class="form-control">
+                            {for $idx = 0; $idx < 12; $idx++}
+                                <option value="{$idx+1}"{if $mois_fin == $idx+1} selected{/if}>{$mois[$idx]}</option>
+                            {/for}
+                        </select>
+                        <select name="annee_fin" class="form-control">
+                            {for $idx = 2009; $idx <= $annee; $idx++}
+                                <option value="{$idx}"{if $annee_fin == $idx} selected{/if}>{$idx}</option>
+                            {/for}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">OK</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="general-block-decorator">
+                <div class="row">
+                    <div class="col-md-12 title title-without-tabs">
+                        {intl l="TOTAL PAR CATÉGORIE"}
+                    </div>
+                </div>
+
+                {$total_ht = 0}
+                {$total_ttc = 0}
+                {$total_tva = 0}
+
+                <table class="table table-bordered table-condensed table-hover">
+                    <thead>
+                        <tr>
+                            <th>{intl l="Categorie"}</th>
+                            <th class="text-right text-nowrap">{intl l="Total HT"}</th>
+                            <th class="text-right text-nowrap">{intl l="Total TVA"}</th>
+                            <th class="text-right text-nowrap">{intl l="Total TTC"}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {foreach $catData as $data}
+                            {$total_ht  = $total_ht  + $data.total_ht}
+                            {$total_ttc = $total_ttc + $data.total_ttc}
+                            {$total_tva = $total_tva + $data.total_tva}
+                            <tr>
+                                <td>{$data.cat_label nofilter}</td>
+                                <td class="text-right text-nowrap">{format_money number=$data.total_ht}</td>
+                                <td class="text-right text-nowrap">{format_money number=$data.total_tva}</td>
+                                <td class="text-right text-nowrap">{format_money number=$data.total_ttc}</td>
+                            </tr>
+                        {/foreach}
+                        {if empty($catData)}
+                            <tr>
+                                <td colspan="99">
+                                    <div class="alert alert-info">Aucune commande pour cette période</div>
+                                </td>
+                            </tr>
+                        {/if}
+                    </tbody>
+
+                    <tfoot>
+                    <tr>
+                        <th class="text-right">{intl l="Total"}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="general-block-decorator">
+                <div class="row">
+                    <div class="col-md-12 title title-without-tabs">
+                        {intl l="TOTAL PAR GRANDE CATÉGORIE"}
+                    </div>
+                </div>
+
+                <table class="table table-bordered table-condensed table-hover">
+                    <thead>
+                    <tr>
+                        <th>{intl l="Categorie"}</th>
+                        <th class="text-right text-nowrap">{intl l="Total HT"}</th>
+                        <th class="text-right text-nowrap">{intl l="Total TVA"}</th>
+                        <th class="text-right text-nowrap">{intl l="Total TTC"}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {$total_ht = 0}
+                    {$total_ttc = 0}
+                    {$total_tva = 0}
+
+                    {foreach $topLevelData as $label => $data}
+                        {$total_ht  = $total_ht  + $data.total_ht}
+                        {$total_ttc = $total_ttc + $data.total_ttc}
+                        {$total_tva = $total_tva + $data.total_tva}
+                        <tr>
+                            <td>{$label nofilter}</td>
+                            <td class="text-right text-nowrap">{format_money number=$data.total_ht}</td>
+                            <td class="text-right text-nowrap">{format_money number=$data.total_tva}</td>
+                            <td class="text-right text-nowrap">{format_money number=$data.total_ttc}</td>
+                        </tr>
+                    {/foreach}
+
+                    {if empty($topLevelData)}
+                        <tr>
+                            <td colspan="99">
+                                <div class="alert alert-info">Aucune commande pour cette période</div>
+                            </td>
+                        </tr>
+                    {/if}
+                    </tbody>
+
+                    <tfoot>
+                    <tr>
+                        <th class="text-right">{intl l="Total"}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
+                        <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{/block}
