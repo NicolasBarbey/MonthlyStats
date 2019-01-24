@@ -4,15 +4,10 @@
         xsi:schemaLocation="http://thelia.net/schema/dic/module http://thelia.net/schema/dic/module/module-2_2.xsd">
     <fullnamespace>MonthlyStats\MonthlyStats</fullnamespace>
     <descriptive locale="en_US">
-        <title>Monthly statistics</title>
-        <!--
-        <subtitle></subtitle>
-        <description></description>
-        <postscriptum></postscriptum>
-        -->
+        <title>Monthly sales statistics</title>
     </descriptive>
     <descriptive locale="fr_FR">
-        <title>Statistiques mensuelles</title>
+        <title>Statistiques de vente mensuelles</title>
     </descriptive>
     <!-- <logo></logo> -->
     <!--<images-folder>images</images-folder>-->
@@ -20,7 +15,7 @@
         <language>en_US</language>
         <language>fr_FR</language>
     </languages>
-    <version>1.0.0</version>
+    <version>0.5.0</version>
     <authors>
         <author>
             <name>Franck Allimant</name>
@@ -30,7 +25,7 @@
         </author>
     </authors>
     <type>classic</type>
-    <thelia>2.4.0</thelia>
+    <thelia>2.3.4</thelia>
     <stability>prod</stability>
     <mandatory>0</mandatory>
     <hidden>0</hidden>
