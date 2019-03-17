@@ -4,109 +4,128 @@
     {$admin_current_location = 'tools'}
 
     {loop name="currency" type="currency" default_only=1}
-        {$currency=$SYMBOL}
+    {$currency=$SYMBOL}
     {/loop}
 {/block}
 
-{block name="page-title"}{intl l='CA Mensuel'}{/block}
+{block name="page-title"}{intl d='monthlystats.bo.default' l='Statistiques mensuelles de Chiffre d\'Affaire'}{/block}
 
 {block name="check-resource"}admin.order{/block}
 {block name="check-access"}view{/block}
 
 {block name="main-content"}
-{$graphData = ''}
+    {$graphData = ''}
 
-<div id="wrapper" class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="general-block-decorator">
-                <div class="jqplot-content" style="margin-bottom: 20px">
-                    <div id="jqplot"></div>
-                </div>
+    <div id="wrapper" class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="general-block-decorator">
+                    <div class="jqplot-content" style="margin-bottom: 20px">
+                        <div id="jqplot"></div>
+                    </div>
 
-                <table class="table table-bordered table-condensed table-hover">
-                    <thead>
-                    <tr>
-                        <th>{intl l="Mois"}</th>
-                        <th class="text-right text-nowrap">{intl l="Total HT"}</th>
-                        <th class="text-right text-nowrap">{intl l="Total TVA"}</th>
-                        <th class="text-right text-nowrap">{intl l="Total TTC"}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {$total_ht = 0}
-                    {$total_ttc = 0}
-                    {$total_tva = 0}
-                    {$virg = ''}
-
-                    {foreach $data as $annee => $monthData}
-                        <tr class="info">
-                            <th colspan="99">
-                                Année {$annee}
-                            </th>
-                        </tr>
-
+                    <table class="table table-bordered table-condensed table-hover">
+                        <thead>
                         <tr>
-                            <th class="text-center">Mois</th>
-                            <th class="text-right">CA HT</th>
-                            <th class="text-right">TVA</th>
-                            <th class="text-right">CA TTC</th>
+                            <th>{intl d='monthlystats.bo.default' l="Mois"}</th>
+                            <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total HT"}</th>
+                            <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total TVA"}</th>
+                            <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total TTC"}</th>
+                            <th class="text-right">{intl d='monthlystats.bo.default' l="Total port TTC"}</th>
+                            <th class="text-right">{intl d='monthlystats.bo.default' l="Total TVA port"}</th>
+
                         </tr>
+                        </thead>
+                        <tbody>
+                        {$total_ht = 0}
+                        {$total_ttc = 0}
+                        {$total_tva = 0}
+                        {$total_postage = 0}
+                        {$total_postage_tax = 0}
+                        {$virg = ''}
 
-                        {$total_ht_an = 0}
-                        {$total_ttc_an = 0}
-                        {$total_tva_an = 0}
-
-                        {foreach $monthData as $mois => $value}
-                            {$strMois = $mois|string_format:"%02d"}
-
-                            <tr>
-                                <td class="text-center">{$strMois}/{$annee|string_format:"%04d"}</td>
-                                <td class="text-right">{format_money number=$value.total_ht symbol=$currency}</td>
-                                <td class="text-right">{format_money number=$value.total_tva symbol=$currency}</td>
-                                <td class="text-right">{format_money number=$value.total_ttc symbol=$currency}</td>
+                        {foreach $data as $annee => $monthData}
+                            <tr class="info">
+                                <th colspan="99">
+                                    Année {$annee}
+                                </th>
                             </tr>
 
-                            {$total_ht_an  = $total_ht_an  + $value.total_ht}
-                            {$total_ttc_an = $total_ttc_an + $value.total_ttc}
-                            {$total_tva_an = $total_tva_an + $value.total_tva}
+                            <tr>
+                                <th class="text-center">{intl d='monthlystats.bo.default' l="Mois"}</th>
+                                <th class="text-right">{intl d='monthlystats.bo.default' l="CA HT"}</th>
+                                <th class="text-right">{intl d='monthlystats.bo.default' l="TVA"}</th>
+                                <th class="text-right">{intl d='monthlystats.bo.default' l="CA TTC"}</th>
+                                <th class="text-right">{intl d='monthlystats.bo.default' l="Port TTC"}</th>
+                                <th class="text-right">{intl d='monthlystats.bo.default' l="TVA port"}</th>
+                            </tr>
 
-                            {$total_ht  = $total_ht  + $value.total_ht}
-                            {$total_ttc = $total_ttc + $value.total_ttc}
-                            {$total_tva = $total_tva + $value.total_tva}
+                            {$total_ht_an = 0}
+                            {$total_ttc_an = 0}
+                            {$total_tva_an = 0}
+                            {$total_postage_an = 0}
+                            {$total_postage_tax_an = 0}
 
-                            {$graphData = "[ '$annee-$strMois-01', {$value.total_ht|round:2} ]$virg$graphData"}
-                            {$virg = ','}
+                            {foreach $monthData as $mois => $value}
+                                {$strMois = $mois|string_format:"%02d"}
+
+                                <tr>
+                                    <td class="text-center">{$strMois}/{$annee|string_format:"%04d"}</td>
+                                    <td class="text-right">{format_money number=$value.total_ht symbol=$currency}</td>
+                                    <td class="text-right">{format_money number=$value.total_tva symbol=$currency}</td>
+                                    <td class="text-right">{format_money number=$value.total_ttc symbol=$currency}</td>
+                                    <td class="text-right">{format_money number=$value.postage symbol=$currency}</td>
+                                    <td class="text-right">{format_money number=$value.postage_tax symbol=$currency}</td>
+                                </tr>
+
+                                {$total_ht_an  = $total_ht_an  + $value.total_ht}
+                                {$total_ttc_an = $total_ttc_an + $value.total_ttc}
+                                {$total_tva_an = $total_tva_an + $value.total_tva}
+                                {$total_postage_an = $total_postage_an + $value.postage}
+                                {$total_postage_tax_an = $total_postage_tax_an + $value.postage_tax}
+
+                                {$total_ht  = $total_ht  + $value.total_ht}
+                                {$total_ttc = $total_ttc + $value.total_ttc}
+                                {$total_tva = $total_tva + $value.total_tva}
+                                {$total_postage = $total_postage + $value.postage}
+                                {$total_postage_tax = $total_postage_tax + $value.postage_tax}
+
+                                {$graphData = "[ '$annee-$strMois-01', {$value.total_ht|round:2} ]$virg$graphData"}
+                                {$virg = ','}
+                            {/foreach}
+
+                            <tr>
+                                <th class="text-center">{intl d='monthlystats.bo.default' l="TOTAL %total" total=$annee}</th>
+                                <th class="text-right text-nowrap">{format_money number=$total_ht_an}</th>
+                                <th class="text-right text-nowrap">{format_money number=$total_tva_an}</th>
+                                <th class="text-right text-nowrap">{format_money number=$total_ttc_an}</th>
+                                <th class="text-right text-nowrap">{format_money number=$total_postage_an}</th>
+                                <th class="text-right text-nowrap">{format_money number=$total_postage_tax_an}</th>
+                            </tr>
                         {/foreach}
 
-                        <tr>
-                            <th class="text-center">TOTAL {$annee}</th>
-                            <th class="text-right text-nowrap">{format_money number=$total_ht_an}</th>
-                            <th class="text-right text-nowrap">{format_money number=$total_tva_an}</th>
-                            <th class="text-right text-nowrap">{format_money number=$total_ttc_an}</th>
-                        </tr>
-                    {/foreach}
+                        {if empty($data)}
+                            <tr>
+                                <td colspan="99">
+                                    <div class="alert alert-info">{intl d='monthlystats.bo.default' l="Aucune commande pour cette période"}</div>
+                                </td>
+                            </tr>
+                        {/if}
+                        </tbody>
 
-                    {if empty($data)}
-                        <tr>
-                            <td colspan="99">
-                                <div class="alert alert-info">Aucune commande pour cette période</div>
-                            </td>
+                        <tr class="success">
+                            <th class="text-center">{intl d='monthlystats.bo.default' l="TOTAL GENERAL"}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_postage}</th>
+                            <th class="text-right text-nowrap">{format_money number=$total_postage_tax}</th>
                         </tr>
-                    {/if}
-                    </tbody>
-
-                    <tr class="success">
-                        <th class="text-center">{intl l="TOTAL GENERAL"}</th>
-                        <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
-                        <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
-                        <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
-                    </tr>
-                </table>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 {/block}
 

@@ -31,6 +31,10 @@ use Thelia\Model\OrderStatusQuery;
 
 class AdminCaController extends BaseAdminController
 {
+    /**
+     * @return \Thelia\Core\HttpFoundation\Response
+     * @throws \Exception
+     */
     public function caParRubrique()
     {
         $moisDebut = $this->getRequest()->get('mois_debut');
@@ -137,11 +141,11 @@ class AdminCaController extends BaseAdminController
 
     /**
      * @param $query
-     * @param string $dateDebut
-     * @param string $dateFin
+     * @param \DateTime $dateDebut
+     * @param \DateTime $dateFin
      * @return \PDOStatement|null
      */
-    protected function executeOrderRequest($query, $dateDebut, $dateFin)
+    protected function executeOrderRequest($query, \DateTime $dateDebut, \DateTime $dateFin)
     {
         /** @var PdoConnection $con */
         $con = Propel::getConnection();
@@ -158,6 +162,10 @@ class AdminCaController extends BaseAdminController
         return $res ? $stmt : null;
     }
 
+    /**
+     * @return \Thelia\Core\HttpFoundation\Response
+     * @throws \Exception
+     */
     public function caMensuel()
     {
         $data = [];
@@ -178,6 +186,8 @@ class AdminCaController extends BaseAdminController
             $query = "
                 SELECT 
                     SUM(" . OrderTableMap::DISCOUNT.") as discount,
+                    SUM(" . OrderTableMap::POSTAGE.") as postage,
+                    SUM(" . OrderTableMap::POSTAGE_TAX.") as postage_tax,
                     " . OrderTableMap::CREATED_AT . " as invoice_date,
                     MONTH(" . OrderTableMap::INVOICE_DATE . ") as mois,
                     YEAR(" . OrderTableMap::INVOICE_DATE . ") as annee                    
@@ -195,7 +205,7 @@ class AdminCaController extends BaseAdminController
                     invoice_date desc
             ";
 
-            $discount = [];
+            $orderData = [];
 
             $stmt = $this->executeOrderRequest($query, $dateDebut, $dateFin);
 
@@ -203,11 +213,15 @@ class AdminCaController extends BaseAdminController
                 $year = $result['annee'];
                 $month = $result['mois'];
 
-                if (!isset($data[$year])) {
-                    $data[$year] = [];
+                if (!isset($orderData[$year])) {
+                    $orderData[$year] = [];
                 }
 
-                $discount[$year][$month] = $result['discount'];
+                $orderData[$year][$month] = [
+                    'discount' => $result['discount'],
+                    'postage' => $result['postage'],
+                    'postage_tax' => $result['postage_tax']
+                ];
             }
 
             // Get monthly sales and taxes
@@ -215,7 +229,7 @@ class AdminCaController extends BaseAdminController
                 SELECT 
                     SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTableMap::PROMO_PRICE . "," . OrderProductTableMap::PRICE . ")) as total_ht,
                     SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTaxTableMap::PROMO_AMOUNT . "," . OrderProductTaxTableMap::AMOUNT . ")) as total_tva,
-                    " . OrderTableMap::CREATED_AT . " as invoice_date,
+                    " . OrderTableMap::INVOICE_DATE . " as invoice_date,
                     MONTH(" . OrderTableMap::INVOICE_DATE . ") as mois,
                     YEAR(" . OrderTableMap::INVOICE_DATE . ") as annee
                 FROM
@@ -252,14 +266,20 @@ class AdminCaController extends BaseAdminController
 
                 $totalHt = $result['total_ht'];
 
-                if (isset($discount[$year][$month])) {
-                    $totalHt -= $discount[$year][$month];
+                if (isset($orderData[$year][$month])) {
+                    $totalHt -= $orderData[$year][$month]['discount'];
+                    $postage = $orderData[$year][$month]['postage'];
+                    $postageTax = $orderData[$year][$month]['postage_tax'];
+                } else {
+                    $postage = $postageTax = 0;
                 }
 
                 $data[$year][$month] = [
                     'total_ht' => $totalHt,
                     'total_tva' => $result['total_tva'],
                     'total_ttc' => $totalHt + $result['total_tva'],
+                    'postage' => $postage,
+                    'postage_tax' => $postageTax
                 ];
             }
         } else {
@@ -286,6 +306,5 @@ class AdminCaController extends BaseAdminController
         $topLevelData[$label]['total_ht'] += $result['total_ht'];
         $topLevelData[$label]['total_tva'] += $result['total_tva'];
         $topLevelData[$label]['total_ttc'] += $result['total_ht'] + $result['total_tva'];
-
     }
 }

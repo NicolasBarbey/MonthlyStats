@@ -8,7 +8,7 @@ lo{extends file="admin-layout.tpl"}
     {/loop}
 {/block}
 
-{block name="page-title"}{intl l='CA par catégorie'}{/block}
+{block name="page-title"}{intl d='monthlystats.bo.default' l='Chiffre d\'affaire par catégorie'}{/block}
 
 {block name="check-resource"}admin.order{/block}
 {block name="check-access"}view{/block}
@@ -25,7 +25,7 @@ lo{extends file="admin-layout.tpl"}
             <div class="general-block-decorator">
                 <form class="form-inline" action="{url path="/admin/ca-par-rubrique"}" method="POST">
                     <div class="form-group">
-                        <label>Visualiser de : </label>
+                        <label>{intl d='monthlystats.bo.default' l='Visualiser de : '}</label>
                         <select name="mois_debut" class="form-control">
                             {for $idx = 0; $idx < 12; $idx++}
                                 <option value="{$idx+1}"{if $mois_debut == $idx+1} selected{/if}>{$mois[$idx]}</option>
@@ -38,7 +38,7 @@ lo{extends file="admin-layout.tpl"}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>à : </label>
+                        <label>{intl d='monthlystats.bo.default' l='à : '}</label>
                         <select name="mois_fin" class="form-control">
                             {for $idx = 0; $idx < 12; $idx++}
                                 <option value="{$idx+1}"{if $mois_fin == $idx+1} selected{/if}>{$mois[$idx]}</option>
@@ -51,7 +51,7 @@ lo{extends file="admin-layout.tpl"}
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">OK</button>
+                    <button type="submit" class="btn btn-primary">{intl d='monthlystats.bo.default' l='OK'}</button>
                 </form>
             </div>
         </div>
@@ -62,7 +62,7 @@ lo{extends file="admin-layout.tpl"}
             <div class="general-block-decorator">
                 <div class="row">
                     <div class="col-md-12 title title-without-tabs">
-                        {intl l="TOTAL PAR CATÉGORIE"}
+                        {intl d='monthlystats.bo.default' l="TOTAL PAR CATÉGORIE"}
                     </div>
                 </div>
 
@@ -73,10 +73,10 @@ lo{extends file="admin-layout.tpl"}
                 <table class="table table-bordered table-condensed table-hover">
                     <thead>
                         <tr>
-                            <th>{intl l="Categorie"}</th>
-                            <th class="text-right text-nowrap">{intl l="Total HT"}</th>
-                            <th class="text-right text-nowrap">{intl l="Total TVA"}</th>
-                            <th class="text-right text-nowrap">{intl l="Total TTC"}</th>
+                            <th>{intl d='monthlystats.bo.default' l="Categorie"}</th>
+                            <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total HT"}</th>
+                            <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total TVA"}</th>
+                            <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total TTC"}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -102,7 +102,7 @@ lo{extends file="admin-layout.tpl"}
 
                     <tfoot>
                     <tr>
-                        <th class="text-right">{intl l="Total"}</th>
+                        <th class="text-right">{intl d='monthlystats.bo.default' l="Total"}</th>
                         <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
                         <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
                         <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
@@ -118,17 +118,17 @@ lo{extends file="admin-layout.tpl"}
             <div class="general-block-decorator">
                 <div class="row">
                     <div class="col-md-12 title title-without-tabs">
-                        {intl l="TOTAL PAR GRANDE CATÉGORIE"}
+                        {intl d='monthlystats.bo.default' l="TOTAL PAR GRANDE CATÉGORIE"}
                     </div>
                 </div>
 
                 <table class="table table-bordered table-condensed table-hover">
                     <thead>
                     <tr>
-                        <th>{intl l="Categorie"}</th>
-                        <th class="text-right text-nowrap">{intl l="Total HT"}</th>
-                        <th class="text-right text-nowrap">{intl l="Total TVA"}</th>
-                        <th class="text-right text-nowrap">{intl l="Total TTC"}</th>
+                        <th>{intl d='monthlystats.bo.default' l="Categorie"}</th>
+                        <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total HT"}</th>
+                        <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total TVA"}</th>
+                        <th class="text-right text-nowrap">{intl d='monthlystats.bo.default' l="Total TTC"}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -151,7 +151,7 @@ lo{extends file="admin-layout.tpl"}
                     {if empty($topLevelData)}
                         <tr>
                             <td colspan="99">
-                                <div class="alert alert-info">Aucune commande pour cette période</div>
+                                <div class="alert alert-info">{intl d='monthlystats.bo.default' l='Aucune commande pour cette période'}</div>
                             </td>
                         </tr>
                     {/if}
@@ -159,7 +159,7 @@ lo{extends file="admin-layout.tpl"}
 
                     <tfoot>
                     <tr>
-                        <th class="text-right">{intl l="Total"}</th>
+                        <th class="text-right">{intl d='monthlystats.bo.default' l="Total"}</th>
                         <th class="text-right text-nowrap">{format_money number=$total_ht}</th>
                         <th class="text-right text-nowrap">{format_money number=$total_tva}</th>
                         <th class="text-right text-nowrap">{format_money number=$total_ttc}</th>
@@ -169,7 +169,5 @@ lo{extends file="admin-layout.tpl"}
             </div>
         </div>
     </div>
-
 </div>
-
 {/block}
