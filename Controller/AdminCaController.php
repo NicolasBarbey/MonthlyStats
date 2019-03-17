@@ -135,71 +135,71 @@ class AdminCaController extends BaseAdminController
         ]);
     }
 
+    /**
+     * @param $query
+     * @param string $dateDebut
+     * @param string $dateFin
+     * @return \PDOStatement|null
+     */
+    protected function executeOrderRequest($query, $dateDebut, $dateFin)
+    {
+        /** @var PdoConnection $con */
+        $con = Propel::getConnection();
+
+        $query = preg_replace("/order([^_])/", "`order`$1", $query);
+
+        $stmt = $con->prepare($query);
+
+        $res = $stmt->execute([
+            $dateDebut->format("Y-m-d H:i:s"),
+            $dateFin->format("Y-m-d H:i:s")
+        ]);
+
+        return $res ? $stmt : null;
+    }
+
     public function caMensuel()
     {
         $data = [];
 
         $firstPaidOrder = OrderQuery::create()
             ->orderByInvoiceDate(Criteria::ASC)
-            ->filterByStatusId([
-                OrderStatusQuery::getNotPaidStatus()->getId(),
-                OrderStatusQuery::getCancelledStatus()->getId(),
-                OrderStatusQuery::getRefundedStatus()->getId()
-            ], Criteria::NOT_IN)
+            ->filterByStatusId(OrderStatusQuery::getPaidStatusIdList(), Criteria::IN)
             ->findOne();
 
         if (null !== $firstPaidOrder) {
-            $anneeDebut = $this->getRequest()->get('annee_debut', $firstPaidOrder->getCreatedAt('Y'));
+            $anneeDebut = $this->getRequest()->get('annee_debut', $firstPaidOrder->getInvoiceDate('Y'));
             $anneeFin = $this->getRequest()->get('annee_fin', date('Y'));
 
             $dateDebut = new \DateTime(sprintf("%04d-01-01 00:00:00", $anneeDebut));
             $dateFin = new \DateTime(sprintf("%04d-12-31 23:59:59", $anneeFin));
 
-            /** @var PdoConnection $con */
-            $con = Propel::getConnection();
-
+            // Get monthly discount total
             $query = "
-            SELECT 
-                SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTableMap::PROMO_PRICE . "," . OrderProductTableMap::PRICE . ")) as total_ht,
-                SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTaxTableMap::PROMO_AMOUNT . "," . OrderProductTaxTableMap::AMOUNT . ")) as total_tva,
-                " . OrderTableMap::COL_INVOICE_DATE . " as invoice_date,
-                MONTH(" . OrderTableMap::COL_INVOICE_DATE . ") as mois,
-                YEAR(" . OrderTableMap::COL_INVOICE_DATE . ") as annee
-            FROM
-                " . OrderProductTableMap::TABLE_NAME . "
-            LEFT JOIN
-                " . OrderTableMap::TABLE_NAME . " on " . OrderTableMap::ID . " = " . OrderProductTableMap::ORDER_ID . "
-            LEFT JOIN
-                " . ProductTableMap::TABLE_NAME . " on " . ProductTableMap::REF . " = " . OrderProductTableMap::PRODUCT_REF . "
-            LEFT JOIN
-                " . OrderProductTaxTableMap::TABLE_NAME . " on " . OrderProductTaxTableMap::ORDER_PRODUCT_ID . " = " . OrderProductTableMap::ID . "
-            LEFT JOIN
-                " . ProductCategoryTableMap::TABLE_NAME . " on " . ProductCategoryTableMap::PRODUCT_ID . " = " . ProductTableMap::ID . " and " . ProductCategoryTableMap::DEFAULT_CATEGORY . " = 1
-            WHERE
-                " . OrderTableMap::INVOICE_DATE . " >= ?    
-            AND
-                " . OrderTableMap::INVOICE_DATE . " <= ?    
-            AND
-                " . OrderTableMap::STATUS_ID . " not in (?, ?, ?)
-            GROUP BY
-                annee, mois
-            ORDER BY
-                invoice_date desc
-        ";
+                SELECT 
+                    SUM(" . OrderTableMap::DISCOUNT.") as discount,
+                    " . OrderTableMap::CREATED_AT . " as invoice_date,
+                    MONTH(" . OrderTableMap::INVOICE_DATE . ") as mois,
+                    YEAR(" . OrderTableMap::INVOICE_DATE . ") as annee                    
+                FROM
+                    " . OrderTableMap::TABLE_NAME . "
+                WHERE
+                    " . OrderTableMap::INVOICE_DATE . " >= ?    
+                AND
+                    " . OrderTableMap::INVOICE_DATE . " <= ?    
+                AND
+                    " . OrderTableMap::STATUS_ID . " in (".implode(',', OrderStatusQuery::getPaidStatusIdList()).")
+                GROUP BY
+                    annee, mois
+                ORDER BY
+                    invoice_date desc
+            ";
 
-            $query = preg_replace("/order([^_])/", "`order`$1", $query);
+            $discount = [];
 
-            $stmt = $con->prepare($query);
+            $stmt = $this->executeOrderRequest($query, $dateDebut, $dateFin);
 
-            $res = $stmt->execute([
-                $dateDebut->format("Y-m-d H:i:s"),
-                $dateFin->format("Y-m-d H:i:s"),
-                OrderStatusQuery::getNotPaidStatus()->getId(),
-                OrderStatusQuery::getCancelledStatus()->getId(),
-                OrderStatusQuery::getRefundedStatus()->getId()
-            ]);
-
-            while ($res && $result = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+            while ($stmt !== null && $result = $stmt->fetch(\PDO::FETCH_ASSOC)) {
                 $year = $result['annee'];
                 $month = $result['mois'];
 
@@ -207,10 +207,59 @@ class AdminCaController extends BaseAdminController
                     $data[$year] = [];
                 }
 
+                $discount[$year][$month] = $result['discount'];
+            }
+
+            // Get monthly sales and taxes
+            $query = "
+                SELECT 
+                    SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTableMap::PROMO_PRICE . "," . OrderProductTableMap::PRICE . ")) as total_ht,
+                    SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTaxTableMap::PROMO_AMOUNT . "," . OrderProductTaxTableMap::AMOUNT . ")) as total_tva,
+                    " . OrderTableMap::CREATED_AT . " as invoice_date,
+                    MONTH(" . OrderTableMap::INVOICE_DATE . ") as mois,
+                    YEAR(" . OrderTableMap::INVOICE_DATE . ") as annee
+                FROM
+                    " . OrderProductTableMap::TABLE_NAME . "
+                LEFT JOIN
+                    " . OrderTableMap::TABLE_NAME . " on " . OrderTableMap::ID . " = " . OrderProductTableMap::ORDER_ID . "
+                LEFT JOIN
+                    " . ProductTableMap::TABLE_NAME . " on " . ProductTableMap::REF . " = " . OrderProductTableMap::PRODUCT_REF . "
+                LEFT JOIN
+                    " . OrderProductTaxTableMap::TABLE_NAME . " on " . OrderProductTaxTableMap::ORDER_PRODUCT_ID . " = " . OrderProductTableMap::ID . "
+                LEFT JOIN
+                    " . ProductCategoryTableMap::TABLE_NAME . " on " . ProductCategoryTableMap::PRODUCT_ID . " = " . ProductTableMap::ID . " and " . ProductCategoryTableMap::DEFAULT_CATEGORY . " = 1
+                WHERE
+                    " . OrderTableMap::INVOICE_DATE . " >= ?    
+                AND
+                    " . OrderTableMap::INVOICE_DATE . " <= ?    
+                AND
+                    " . OrderTableMap::STATUS_ID . " in (".implode(',', OrderStatusQuery::getPaidStatusIdList()).")
+                GROUP BY
+                    annee, mois
+                ORDER BY
+                    invoice_date desc
+            ";
+
+            $stmt = $this->executeOrderRequest($query, $dateDebut, $dateFin);
+
+            while ($stmt !== null && $result = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+                $year = $result['annee'];
+                $month = $result['mois'];
+
+                if (!isset($data[$year])) {
+                    $data[$year] = [];
+                }
+
+                $totalHt = $result['total_ht'];
+
+                if (isset($discount[$year][$month])) {
+                    $totalHt -= $discount[$year][$month];
+                }
+
                 $data[$year][$month] = [
-                    'total_ht' => $result['total_ht'],
+                    'total_ht' => $totalHt,
                     'total_tva' => $result['total_tva'],
-                    'total_ttc' => $result['total_ht'] + $result['total_tva'],
+                    'total_ttc' => $totalHt + $result['total_tva'],
                 ];
             }
         } else {
