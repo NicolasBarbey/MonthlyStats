@@ -4,11 +4,11 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://symfony.com/schema/routing http://symfony.com/schema/routing/routing-1.0.xsd">
 
-    <route id="monthlystats.ca-par-rubrique" path="/admin/ca-par-rubrique">
-        <default key="_controller">MonthlyStats\Controller\AdminCaController::caParRubrique</default>
+    <route id="monthlystats.ca-par-rubrique" path="/admin/ca-by-category">
+        <default key="_controller">MonthlyStats\Controller\AdminCaController::caByCategory</default>
     </route>
 
-    <route id="monthlystats.ca-mensuel" path="/admin/ca-mensuel">
-        <default key="_controller">MonthlyStats\Controller\AdminCaController::caMensuel</default>
+    <route id="monthlystats.ca-mensuel" path="/admin/ca-monthly">
+        <default key="_controller">MonthlyStats\Controller\AdminCaController::caMonthly</default>
     </route>
 </routes>

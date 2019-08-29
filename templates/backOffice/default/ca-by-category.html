@@ -15,38 +15,50 @@ lo{extends file="admin-layout.tpl"}
 
 {block name="main-content"}
 
-{$mois = [ "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Décembre" ]}
+{$month =[
+    {intl d='monthlystats.bo.default' l="January"},
+    {intl d='monthlystats.bo.default' l="February"},
+    {intl d='monthlystats.bo.default' l="March"},
+    {intl d='monthlystats.bo.default' l="April"},
+    {intl d='monthlystats.bo.default' l="May"},
+    {intl d='monthlystats.bo.default' l="June"},
+    {intl d='monthlystats.bo.default' l="July"},
+    {intl d='monthlystats.bo.default' l="August"},
+    {intl d='monthlystats.bo.default' l="September"},
+    {intl d='monthlystats.bo.default' l="October"},
+    {intl d='monthlystats.bo.default' l="November"},
+    {intl d='monthlystats.bo.default' l="December"}
+]}
 
 {$annee = $smarty.now|date_format:"%Y"}
-
 <div id="wrapper" class="container">
     <div class="row">
         <div class="col-md-12">
             <div class="general-block-decorator">
-                <form class="form-inline" action="{url path="/admin/ca-par-rubrique"}" method="POST">
+                <form class="form-inline" action="{url path="/admin/ca-by-category"}" method="POST">
                     <div class="form-group">
                         <label>{intl d='monthlystats.bo.default' l='Visualiser de : '}</label>
-                        <select name="mois_debut" class="form-control">
+                        <select name="month_start" class="form-control">
                             {for $idx = 0; $idx < 12; $idx++}
-                                <option value="{$idx+1}"{if $mois_debut == $idx+1} selected{/if}>{$mois[$idx]}</option>
+                                <option value="{$idx+1}"{if $month_start == $idx+1} selected{/if}>{$month[$idx]}</option>
                             {/for}
                         </select>
-                        <select name="annee_debut" class="form-control">
+                        <select name="year_start" class="form-control">
                             {for $idx = 2009; $idx <= $annee; $idx++}
-                                <option value="{$idx}"{if $annee_debut == $idx} selected{/if}>{$idx}</option>
+                                <option value="{$idx}"{if $year_start == $idx} selected{/if}>{$idx}</option>
                             {/for}
                         </select>
                     </div>
                     <div class="form-group">
                         <label>{intl d='monthlystats.bo.default' l='à : '}</label>
-                        <select name="mois_fin" class="form-control">
+                        <select name="month_end" class="form-control">
                             {for $idx = 0; $idx < 12; $idx++}
-                                <option value="{$idx+1}"{if $mois_fin == $idx+1} selected{/if}>{$mois[$idx]}</option>
+                                <option value="{$idx+1}"{if $month_end == $idx+1} selected{/if}>{$month[$idx]}</option>
                             {/for}
                         </select>
-                        <select name="annee_fin" class="form-control">
+                        <select name="year_end" class="form-control">
                             {for $idx = 2009; $idx <= $annee; $idx++}
-                                <option value="{$idx}"{if $annee_fin == $idx} selected{/if}>{$idx}</option>
+                                <option value="{$idx}"{if $year_end == $idx} selected{/if}>{$idx}</option>
                             {/for}
                         </select>
                     </div>

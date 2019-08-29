@@ -44,10 +44,10 @@
                         {$total_postage_tax = 0}
                         {$virg = ''}
 
-                        {foreach $data as $annee => $monthData}
+                        {foreach $data as $year => $monthData}
                             <tr class="info">
                                 <th colspan="99">
-                                    Année {$annee}
+                                    {intl d='monthlystats.bo.default'  l='Année'} {$year}
                                 </th>
                             </tr>
 
@@ -67,10 +67,10 @@
                             {$total_postage_tax_an = 0}
 
                             {foreach $monthData as $mois => $value}
-                                {$strMois = $mois|string_format:"%02d"}
+                                {$strMonth = $mois|string_format:"%02d"}
 
                                 <tr>
-                                    <td class="text-center">{$strMois}/{$annee|string_format:"%04d"}</td>
+                                    <td class="text-center">{$strMonth}/{$year|string_format:"%04d"}</td>
                                     <td class="text-right">{format_money number=$value.total_ht symbol=$currency}</td>
                                     <td class="text-right">{format_money number=$value.total_tva symbol=$currency}</td>
                                     <td class="text-right">{format_money number=$value.total_ttc symbol=$currency}</td>
@@ -90,12 +90,12 @@
                                 {$total_postage = $total_postage + $value.postage}
                                 {$total_postage_tax = $total_postage_tax + $value.postage_tax}
 
-                                {$graphData = "[ '$annee-$strMois-01', {$value.total_ht|round:2} ]$virg$graphData"}
+                                {$graphData = "[ '$year-$strMonth-01', {$value.total_ht|round:2} ]$virg$graphData"}
                                 {$virg = ','}
                             {/foreach}
 
                             <tr>
-                                <th class="text-center">{intl d='monthlystats.bo.default' l="TOTAL %total" total=$annee}</th>
+                                <th class="text-center">{intl d='monthlystats.bo.default' l="TOTAL %total" total=$year}</th>
                                 <th class="text-right text-nowrap">{format_money number=$total_ht_an}</th>
                                 <th class="text-right text-nowrap">{format_money number=$total_tva_an}</th>
                                 <th class="text-right text-nowrap">{format_money number=$total_ttc_an}</th>

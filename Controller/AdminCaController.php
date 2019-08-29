@@ -14,6 +14,7 @@
  */
 namespace MonthlyStats\Controller;
 
+use MonthlyStats\MonthlyStats;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Connection\PdoConnection;
 use Propel\Runtime\Propel;
@@ -35,16 +36,16 @@ class AdminCaController extends BaseAdminController
      * @return \Thelia\Core\HttpFoundation\Response
      * @throws \Exception
      */
-    public function caParRubrique()
+    public function caByCategory()
     {
-        $moisDebut = $this->getRequest()->get('mois_debut');
-        $moisFin = $this->getRequest()->get('mois_fin');
+        $monthStart = $this->getRequest()->get('month_start');
+        $monthEnd = $this->getRequest()->get('month_end');
 
-        $anneeDebut = $this->getRequest()->get('annee_debut');
-        $anneeFin = $this->getRequest()->get('annee_fin');
+        $yearStart = $this->getRequest()->get('year_start');
+        $yearEnd = $this->getRequest()->get('year_end');
 
-        $dateDebut = new \DateTime(sprintf("%04d-%02d-01 00:00:00", $anneeDebut, $moisDebut));
-        $dateFin   = new \DateTime(sprintf("%04d-%02d-31 23:59:59", $anneeFin, $moisFin));
+        $dateStart = new \DateTime(sprintf("%04d-%02d-01 00:00:00", $yearStart, $monthStart));
+        $dateEnd   = new \DateTime(sprintf("%04d-%02d-31 23:59:59", $yearEnd, $monthEnd));
 
         /** @var PdoConnection $con */
         $con = Propel::getConnection();
@@ -84,8 +85,8 @@ class AdminCaController extends BaseAdminController
         $stmt = $con->prepare($query);
 
         $res = $stmt->execute([
-            $dateDebut->format("Y-m-d H:i:s"),
-            $dateFin->format("Y-m-d H:i:s"),
+            $dateStart->format("Y-m-d H:i:s"),
+            $dateEnd->format("Y-m-d H:i:s"),
             OrderStatusQuery::getNotPaidStatus()->getId(),
             OrderStatusQuery::getCancelledStatus()->getId()
         ]);
@@ -114,13 +115,13 @@ class AdminCaController extends BaseAdminController
 
                 $label = substr($label, 0, -6);
             } else {
-                $label = "Catégorie inexistante (probablement supprimée)";
+                $label = $this->getTranslator()->trans("Catégorie inexistante (probablement supprimée)", [], MonthlyStats::DOMAIN_NAME);
 
                 $this->addOrder($label, $result, $topLevelData);
             }
 
             $catData[] = [
-                'total_ht' => $result['total_ht'],
+                'total_ht'  => $result['total_ht'],
                 'total_tva' => $result['total_tva'],
                 'total_ttc' => $result['total_ht'] + $result['total_tva'],
                 'cat_label' => $label
@@ -129,23 +130,23 @@ class AdminCaController extends BaseAdminController
 
         //var_dump($topLevelData);
 
-        return $this->render("ca-par-rubrique", [
-            'catData' => $catData,
-            'topLevelData' => $topLevelData,
-            'mois_debut'   => $dateDebut->format("n"),
-            'mois_fin'     => $dateDebut->format("n"),
-            'annee_debut'  => $dateDebut->format("Y"),
-            'annee_fin'    => $dateDebut->format("Y"),
+        return $this->render("ca-by-category", [
+            'catData'       => $catData,
+            'topLevelData'  => $topLevelData,
+            'month_start'   => $dateStart->format("n"),
+            'month_end'     => $dateEnd->format("n"),
+            'year_start'    => $dateStart->format("Y"),
+            'year_end'      => $dateEnd->format("Y"),
         ]);
     }
 
     /**
      * @param $query
-     * @param \DateTime $dateDebut
-     * @param \DateTime $dateFin
+     * @param \DateTime $dateStart
+     * @param \DateTime $dateEnd
      * @return \PDOStatement|null
      */
-    protected function executeOrderRequest($query, \DateTime $dateDebut, \DateTime $dateFin)
+    protected function executeOrderRequest($query, \DateTime $dateStart, \DateTime $dateEnd)
     {
         /** @var PdoConnection $con */
         $con = Propel::getConnection();
@@ -155,8 +156,8 @@ class AdminCaController extends BaseAdminController
         $stmt = $con->prepare($query);
 
         $res = $stmt->execute([
-            $dateDebut->format("Y-m-d H:i:s"),
-            $dateFin->format("Y-m-d H:i:s")
+            $dateStart->format("Y-m-d H:i:s"),
+            $dateEnd->format("Y-m-d H:i:s")
         ]);
 
         return $res ? $stmt : null;
@@ -166,21 +167,28 @@ class AdminCaController extends BaseAdminController
      * @return \Thelia\Core\HttpFoundation\Response
      * @throws \Exception
      */
-    public function caMensuel()
+    public function caMonthly()
     {
         $data = [];
+        $paidStatus = [2, 3, 4];
+        if (method_exists(OrderStatusQuery::class, "getPaidStatusIdList")){
+            $paidStatus =  OrderStatusQuery::getPaidStatusIdList();
+        }
 
         $firstPaidOrder = OrderQuery::create()
             ->orderByInvoiceDate(Criteria::ASC)
-            ->filterByStatusId(OrderStatusQuery::getPaidStatusIdList(), Criteria::IN)
+            ->filterByStatusId($paidStatus, Criteria::IN)
             ->findOne();
 
-        if (null !== $firstPaidOrder) {
-            $anneeDebut = $this->getRequest()->get('annee_debut', $firstPaidOrder->getInvoiceDate('Y'));
-            $anneeFin = $this->getRequest()->get('annee_fin', date('Y'));
+        $yearStart = $yearEnd = date('Y');
 
-            $dateDebut = new \DateTime(sprintf("%04d-01-01 00:00:00", $anneeDebut));
-            $dateFin = new \DateTime(sprintf("%04d-12-31 23:59:59", $anneeFin));
+
+        if (null !== $firstPaidOrder) {
+            $yearStart = $this->getRequest()->get('annee_debut', $firstPaidOrder->getInvoiceDate('Y'));
+            $yearEnd = $this->getRequest()->get('annee_fin', date('Y'));
+
+            $startDate = new \DateTime(sprintf("%04d-01-01 00:00:00", $yearStart));
+            $endDate = new \DateTime(sprintf("%04d-12-31 23:59:59", $yearEnd));
 
             // Get monthly discount total
             $query = "
@@ -189,8 +197,8 @@ class AdminCaController extends BaseAdminController
                     SUM(" . OrderTableMap::POSTAGE.") as postage,
                     SUM(" . OrderTableMap::POSTAGE_TAX.") as postage_tax,
                     " . OrderTableMap::CREATED_AT . " as invoice_date,
-                    MONTH(" . OrderTableMap::INVOICE_DATE . ") as mois,
-                    YEAR(" . OrderTableMap::INVOICE_DATE . ") as annee                    
+                    MONTH(" . OrderTableMap::INVOICE_DATE . ") as month,
+                    YEAR(" . OrderTableMap::INVOICE_DATE . ") as year                    
                 FROM
                     " . OrderTableMap::TABLE_NAME . "
                 WHERE
@@ -198,20 +206,19 @@ class AdminCaController extends BaseAdminController
                 AND
                     " . OrderTableMap::INVOICE_DATE . " <= ?    
                 AND
-                    " . OrderTableMap::STATUS_ID . " in (".implode(',', OrderStatusQuery::getPaidStatusIdList()).")
+                    " . OrderTableMap::STATUS_ID . " in (".implode(',', $paidStatus).")
                 GROUP BY
-                    annee, mois
+                    year, month
                 ORDER BY
                     invoice_date desc
             ";
-
             $orderData = [];
 
-            $stmt = $this->executeOrderRequest($query, $dateDebut, $dateFin);
+            $stmt = $this->executeOrderRequest($query, $startDate, $endDate);
 
             while ($stmt !== null && $result = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                $year = $result['annee'];
-                $month = $result['mois'];
+                $year = $result['year'];
+                $month = $result['month'];
 
                 if (!isset($orderData[$year])) {
                     $orderData[$year] = [];
@@ -230,8 +237,8 @@ class AdminCaController extends BaseAdminController
                     SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTableMap::PROMO_PRICE . "," . OrderProductTableMap::PRICE . ")) as total_ht,
                     SUM(" . OrderProductTableMap::QUANTITY . " * IF(" . OrderProductTableMap::WAS_IN_PROMO . "," . OrderProductTaxTableMap::PROMO_AMOUNT . "," . OrderProductTaxTableMap::AMOUNT . ")) as total_tva,
                     " . OrderTableMap::INVOICE_DATE . " as invoice_date,
-                    MONTH(" . OrderTableMap::INVOICE_DATE . ") as mois,
-                    YEAR(" . OrderTableMap::INVOICE_DATE . ") as annee
+                    MONTH(" . OrderTableMap::INVOICE_DATE . ") as month,
+                    YEAR(" . OrderTableMap::INVOICE_DATE . ") as year
                 FROM
                     " . OrderProductTableMap::TABLE_NAME . "
                 LEFT JOIN
@@ -247,18 +254,18 @@ class AdminCaController extends BaseAdminController
                 AND
                     " . OrderTableMap::INVOICE_DATE . " <= ?    
                 AND
-                    " . OrderTableMap::STATUS_ID . " in (".implode(',', OrderStatusQuery::getPaidStatusIdList()).")
+                    " . OrderTableMap::STATUS_ID . " in (".implode(',', $paidStatus).")
                 GROUP BY
-                    annee, mois
+                    year, month
                 ORDER BY
                     invoice_date desc
             ";
 
-            $stmt = $this->executeOrderRequest($query, $dateDebut, $dateFin);
+            $stmt = $this->executeOrderRequest($query, $startDate, $endDate);
 
             while ($stmt !== null && $result = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                $year = $result['annee'];
-                $month = $result['mois'];
+                $year = $result['year'];
+                $month = $result['month'];
 
                 if (!isset($data[$year])) {
                     $data[$year] = [];
@@ -275,21 +282,18 @@ class AdminCaController extends BaseAdminController
                 }
 
                 $data[$year][$month] = [
-                    'total_ht' => $totalHt,
-                    'total_tva' => $result['total_tva'],
-                    'total_ttc' => $totalHt + $result['total_tva'],
-                    'postage' => $postage,
-                    'postage_tax' => $postageTax
+                    'total_ht'      => $totalHt,
+                    'total_tva'     => $result['total_tva'],
+                    'total_ttc'     => $totalHt + $result['total_tva'],
+                    'postage'       => $postage,
+                    'postage_tax'   => $postageTax
                 ];
             }
-        } else {
-            $anneeDebut = date('Y');
         }
-
-        return $this->render("ca-mensuel", [
-            'data'         => $data,
-            'annee_debut'  => $anneeDebut,
-            'annee_fin'    => $anneeFin
+        return $this->render("ca-monthly", [
+            'data'          => $data,
+            'year_start'    => $yearStart,
+            'year_end'      => $yearEnd
         ]);
     }
 

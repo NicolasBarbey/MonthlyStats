@@ -15,6 +15,7 @@
 
 namespace MonthlyStats\Hook;
 
+use MonthlyStats\MonthlyStats;
 use Thelia\Core\Event\Hook\HookRenderBlockEvent;
 use Thelia\Core\Hook\BaseHook;
 use Thelia\Tools\URL;
@@ -25,23 +26,23 @@ class HookManager extends BaseHook
     {
         $event->add(
             [
-                'id' => 'tools_menu_ca_mensuel',
+                'id' => 'tools_menu_ca_monthly',
                 'class' => '',
-                'url' => URL::getInstance()->absoluteUrl('/admin/ca-mensuel'),
-                'title' => "C.A. Mensuel"
+                'url' => URL::getInstance()->absoluteUrl('/admin/ca-monthly'),
+                'title' => $this->translator->trans("C.A. Mensuel", [], MonthlyStats::DOMAIN_NAME),
             ])
             ->add(
                 [
-                    'id' => 'tools_menu_ca_par_rubrique',
+                    'id' => 'tools_menu_ca_by_category',
                     'class' => '',
-                    'url' => URL::getInstance()->absoluteUrl('/admin/ca-par-rubrique', [
-                        'mois_debut' => date('m'),
-                        'mois_fin' => date('m'),
-                        'annee_debut' => date('Y'),
-                        'annee_fin' => date('Y')
+                    'url' => URL::getInstance()->absoluteUrl('/admin/ca-by-category', [
+                        'month_start' => date('m'),
+                        'month_end' => date('m'),
+                        'year_start' => date('Y'),
+                        'year_end' => date('Y')
 
                     ]),
-                    'title' => "C.A. par catégorie"
+                    'title' => $this->translator->trans("C.A. par catégorie", [], MonthlyStats::DOMAIN_NAME),
                 ]
             );
     }

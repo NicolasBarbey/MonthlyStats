@@ -1,4 +1,7 @@
 <?php
+
 return array(
-    // 'an english string' => 'La traduction française de la chaine',
+    'C.A. Mensuel' => 'C.A. Mensuel',
+    'C.A. par catégorie' => 'C.A. par catégorie',
+    'Catégorie inexistante (probablement supprimée)' => 'Catégorie inexistante (probablement supprimée)',
 );
